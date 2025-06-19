@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NaturaLens: Interactive Blueprint</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chosen Palette: Earthy Neutrals -->
+    <!-- Application Structure Plan: The SPA is designed as an interactive project dashboard, transforming the dense report into a digestible, non-linear experience. The structure prioritizes user-driven exploration over the report's linear format. A sticky top navigation allows users to jump to key pillars (Vision, Tech, AI, etc.). The core of the application is an interactive timeline for the "Roadmap" and a dynamic bar chart for the "Tech Stack Comparison," allowing users to actively engage with the data. This dashboard/thematic structure was chosen because the source report is a strategic plan, best understood by exploring its interconnected components rather than reading it end-to-end. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Phased Development Plan (Parts 1 & 8) -> Goal: Show Change/Process -> Viz: Interactive HTML/CSS Timeline -> Interaction: Click a phase to display its detailed goals, features, and tech focus. Justification: A timeline is the most intuitive way to visualize a multi-stage project plan, making complex dependencies clearer.
+        - Report Info: Technology Comparison (Table 1) -> Goal: Compare -> Viz: Interactive Bar Chart (Chart.js/Canvas) -> Interaction: A dropdown lets the user select a feature (e.g., "Shared AR"), and the chart dynamically updates to compare the platforms on that specific metric. Justification: An interactive chart is more engaging than a static table and allows for direct, focused comparisons.
+        - Report Info: AI Data Pipeline (Part 3) -> Goal: Organize/Process -> Viz: HTML/CSS Flow Diagram -> Interaction: Static visual. Justification: A simple, clear visual flow is more effective at explaining a technical process than a block of text.
+        - Report Info: Monetization Strategies (Table 3) -> Goal: Compare/Inform -> Viz: Styled HTML Cards -> Interaction: Static visual. Justification: Cards effectively segment and present the pros and cons of each strategy in a clean, readable format.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 50vh;
+        }
+        @media (min-width: 768px) { .chart-container { height: 500px; } }
+        .nav-link {
+            transition: color 0.3s, border-color 0.3s;
+        }
+        .nav-link.active {
+            color: #2563eb; 
+            border-bottom-color: #2563eb;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            top: 1.25rem;
+            left: -0.5rem;
+            width: 1rem;
+            height: 1rem;
+            border-radius: 9999px;
+            background-color: #d1d5db;
+            border: 2px solid #f9fafb;
+        }
+        .timeline-item.active::before {
+            background-color: #2563eb;
+            transform: scale(1.25);
+        }
+        .flow-diagram-arrow::after {
+            content: '→';
+            font-size: 1.5rem;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <header id="header" class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-4 lg:px-6">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-xl font-bold text-blue-600">NaturaLens</span>
+                </div>
+                <div class="hidden md:flex items-center space-x-1 lg:space-x-4">
+                    <a href="#vision" class="nav-link px-3 py-2 text-sm font-medium text-slate-600 hover:text-blue-600 border-b-2 border-transparent">Vision</a>
+                    <a href="#tech-stack" class="nav-link px-3 py-2 text-sm font-medium text-slate-600 hover:text-blue-600 border-b-2 border-transparent">Tech Stack</a>
+                    <a href="#ai-layer" class="nav-link px-3 py-2 text-sm font-medium text-slate-600 hover:text-blue-600 border-b-2 border-transparent">AI Layer</a>
+                    <a href="#backend" class="nav-link px-3 py-2 text-sm font-medium text-slate-600 hover:text-blue-600 border-b-2 border-transparent">Backend</a>
+                    <a href="#ux" class="nav-link px-3 py-2 text-sm font-medium text-slate-600 hover:text-blue-600 border-b-2 border-transparent">UX</a>
+                    <a href="#monetization" class="nav-link px-3 py-2 text-sm font-medium text-slate-600 hover:text-blue-600 border-b-2 border-transparent">Monetization</a>
+                    <a href="#roadmap" class="nav-link px-3 py-2 text-sm font-medium text-slate-600 hover:text-blue-600 border-b-2 border-transparent">Roadmap</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 lg:px-6 py-8 md:py-12">
+
+        <section id="vision" class="mb-16 scroll-mt-24">
+            <h1 class="text-4xl md:text-5xl font-bold text-center mb-4">A Social Lens on the Natural World</h1>
+            <p class="text-lg text-slate-600 text-center max-w-3xl mx-auto mb-12">This document is an interactive exploration of the "Project NaturaLens" blueprint. It outlines the strategic vision, technology choices, and development roadmap for an augmented reality application designed to merge nature exploration with social interaction. Use the navigation above or scroll to explore the key pillars of the project.</p>
+            
+            <div class="grid md:grid-cols-3 gap-8 text-center">
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <div class="text-4xl mb-3">👁️</div>
+                    <h3 class="text-xl font-semibold mb-2">Identify</h3>
+                    <p class="text-slate-600">Point your camera at a natural object to receive real-time, contextually relevant information.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <div class="text-4xl mb-3">🎨</div>
+                    <h3 class="text-xl font-semibold mb-2">Augment</h3>
+                    <p class="text-slate-600">Enhance your view with artistic filters and effects, stylizing your vision of the world.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <div class="text-4xl mb-3">❤️</div>
+                    <h3 class="text-xl font-semibold mb-2">Annotate & Share</h3>
+                    <p class="text-slate-600">Apply hashtags and "like" geospatial points of interest, contributing to a social map of nature.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="tech-stack" class="mb-16 scroll-mt-24">
+            <h2 class="text-3xl font-bold text-center mb-4">The Technology Stack</h2>
+            <p class="text-lg text-slate-600 text-center max-w-3xl mx-auto mb-8">Choosing the right technology is the most critical technical decision. The project recommends a cross-platform approach with Unity and AR Foundation for the core, augmented with specialized SDKs for advanced features. This section provides an interactive comparison of the leading AR frameworks evaluated in the report.</p>
+
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <div class="flex flex-col md:flex-row md:items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold mb-2 md:mb-0">AR Framework Feature Comparison</h3>
+                    <div class="flex items-center space-x-2">
+                        <label for="feature-selector" class="text-sm font-medium">Compare by:</label>
+                        <select id="feature-selector" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                        </select>
+                    </div>
+                </div>
+                 <div class="chart-container">
+                    <canvas id="tech-stack-chart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section id="ai-layer" class="mb-16 scroll-mt-24">
+            <h2 class="text-3xl font-bold text-center mb-4">The Intelligence Layer</h2>
+            <p class="text-lg text-slate-600 text-center max-w-3xl mx-auto mb-8">The app's core utility relies on a powerful Machine Learning system to recognize natural objects in real-time. This requires a robust pipeline to train and deploy highly efficient models for on-device performance. The diagram below illustrates the proposed data and model integration workflow.</p>
+             <div class="bg-white p-6 md:p-8 rounded-xl shadow-lg">
+                <h3 class="text-xl font-semibold text-center mb-6">ML Model Training & Deployment Pipeline</h3>
+                <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4 text-center">
+                    <div class="p-4 bg-slate-100 rounded-lg">
+                        <p class="font-semibold">iNaturalist Dataset</p>
+                        <p class="text-sm text-slate-500">Source Data</p>
+                    </div>
+                    <div class="flow-diagram-arrow hidden md:block"></div>
+                    <div class="p-4 bg-slate-100 rounded-lg">
+                        <p class="font-semibold">Fine-Tuning</p>
+                        <p class="text-sm text-slate-500">Transfer Learning</p>
+                    </div>
+                    <div class="flow-diagram-arrow hidden md:block"></div>
+                    <div class="p-4 bg-slate-100 rounded-lg">
+                        <p class="font-semibold">ONNX Conversion</p>
+                        <p class="text-sm text-slate-500">Model Standard</p>
+                    </div>
+                    <div class="flow-diagram-arrow hidden md:block"></div>
+                    <div class="p-4 bg-blue-100 text-blue-800 rounded-lg ring-2 ring-blue-200">
+                        <p class="font-semibold">Unity Barracuda</p>
+                        <p class="text-sm">On-Device Inference</p>
+                    </div>
+                </div>
+             </div>
+        </section>
+
+        <section id="backend" class="mb-16 scroll-mt-24">
+             <h2 class="text-3xl font-bold text-center mb-4">Scalable Backend Architecture</h2>
+            <p class="text-lg text-slate-600 text-center max-w-3xl mx-auto mb-8">To support a global social AR app, the backend must be flexible and scalable. The report recommends a "polyglot persistence" strategy, using the right database for the right job, and a modern GraphQL API to efficiently serve data to mobile clients.</p>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-semibold mb-3">🗄️ Database Strategy</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-blue-600">PostgreSQL + PostGIS</h4>
+                            <p class="text-slate-600">Optimized for fast and complex geospatial queries, like finding all content within a specific radius. Essential for the app's location-based features.</p>
+                        </div>
+                         <div>
+                            <h4 class="font-semibold text-emerald-600">MongoDB</h4>
+                            <p class="text-slate-600">A flexible NoSQL database perfect for handling user-generated content, profiles, and social graph data without a rigid schema.</p>
+                        </div>
+                    </div>
+                </div>
+                 <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-semibold mb-3">🔄 API Design</h3>
+                     <div class="space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-rose-600">REST API (Traditional)</h4>
+                            <p class="text-slate-600">Often leads to over-fetching or under-fetching data, creating inefficiency for mobile apps that need to make multiple requests.</p>
+                        </div>
+                         <div>
+                            <h4 class="font-semibold text-violet-600">GraphQL (Recommended)</h4>
+                            <p class="text-slate-600">Allows the mobile client to request exactly the data it needs in a single call, minimizing network usage and improving performance.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="ux" class="mb-16 scroll-mt-24">
+            <h2 class="text-3xl font-bold text-center mb-4">Intuitive User Experience (UX)</h2>
+            <p class="text-lg text-slate-600 text-center max-w-3xl mx-auto mb-8">In AR, the real world is the canvas. The UI must be non-intrusive, context-aware, and designed to enhance—not clutter—the user's experience. The key is to reduce cognitive load and keep the user immersed in the 3D world.</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                 <div class="bg-white p-4 rounded-xl shadow-md">
+                    <h3 class="font-semibold">Context is King</h3>
+                    <p class="text-sm text-slate-500 mt-1">UI appears only when needed.</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-md">
+                    <h3 class="font-semibold">Minimize Load</h3>
+                    <p class="text-sm text-slate-500 mt-1">Simple, intuitive controls.</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-md">
+                    <h3 class="font-semibold">Scene over Screen</h3>
+                    <p class="text-sm text-slate-500 mt-1">Anchor UI in 3D space.</p>
+                </div>
+                 <div class="bg-white p-4 rounded-xl shadow-md">
+                    <h3 class="font-semibold">Spatial Awareness</h3>
+                    <p class="text-sm text-slate-500 mt-1">Use shadows and occlusion.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="monetization" class="mb-16 scroll-mt-24">
+            <h2 class="text-3xl font-bold text-center mb-4">Monetization & Growth</h2>
+            <p class="text-lg text-slate-600 text-center max-w-3xl mx-auto mb-8">A hybrid monetization model is proposed to ensure long-term sustainability. The strategy begins with a free app to build a community, then introduces revenue through value-additive features that users willingly engage with.</p>
+            <div id="monetization-cards" class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            </div>
+        </section>
+
+        <section id="roadmap" class="scroll-mt-24">
+             <h2 class="text-3xl font-bold text-center mb-4">Development Roadmap</h2>
+             <p class="text-lg text-slate-600 text-center max-w-3xl mx-auto mb-12">The project will be developed in an iterative, phased approach to mitigate risk and allow the product to evolve based on user feedback. Click on each phase of the timeline to see its goals, key features, and technology focus.</p>
+
+            <div class="grid grid-cols-12 gap-8">
+                <div class="col-span-12 md:col-span-4">
+                     <div id="timeline-nav" class="relative pl-6 border-l-2 border-slate-200">
+                     </div>
+                </div>
+
+                <div class="col-span-12 md:col-span-8">
+                    <div id="roadmap-details" class="bg-white p-6 rounded-xl shadow-lg transition-all duration-500 min-h-[300px]">
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-slate-800 text-slate-400 mt-16">
+        <div class="container mx-auto px-4 lg:px-6 py-4 text-center text-sm">
+            <p>Interactive Blueprint for Project NaturaLens. Re-imagined from the source report.</p>
+        </div>
+    </footer>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    const appData = {
+        techStack: {
+            platforms: ["ARKit", "ARCore", "AR Foundation", "Vuforia", "Niantic Lightship"],
+            features: {
+                "Platform Support": [3, 2, 5, 4, 2],
+                "Core Tracking (SLAM)": [5, 5, 5, 5, 5],
+                "3D Object Tracking": [4, 1, 4, 5, 4],
+                "Semantic Segmentation": [4, 1, 4, 1, 5],
+                "Shared/Multiplayer AR": [3, 4, 4, 1, 5],
+                "Persistent Content": [4, 4, 4, 4, 5],
+            },
+            featureLabels: ["Limited", "Basic", "Good", "Advanced", "Excellent/Best-in-class"]
+        },
+        monetization: [
+            {
+                title: 'In-App Purchases',
+                phase: 'Phase 1 & 2',
+                description: 'One-time purchases of virtual goods like premium filter packs or advanced features.',
+                pros: 'High revenue potential from engaged users.',
+                cons: 'Revenue can be unpredictable.'
+            },
+            {
+                title: 'Branded Content / AR Ads',
+                phase: 'Phase 2 & 3',
+                description: 'Brands pay to create sponsored filters or location-based AR experiences.',
+                pros: 'Non-intrusive to users; high revenue potential.',
+                cons: 'Requires a significant user base to attract brands.'
+            },
+            {
+                title: 'Affiliate Marketing',
+                phase: 'Phase 2 & 3',
+                description: 'Earning commissions by referring users to purchase partner products or services.',
+                pros: 'Easy to implement and provides user value.',
+                cons: 'Lower revenue per transaction.'
+            },
+            {
+                title: 'Subscription Model',
+                phase: 'Phase 3',
+                description: 'Recurring payments for a bundle of premium features, content, and cloud services.',
+                pros: 'Provides predictable, stable revenue.',
+                cons: 'High barrier to entry; requires strong value.'
+            }
+        ],
+        roadmap: [
+            {
+                phase: 'Phase 1',
+                title: 'Minimum Viable Product (MVP)',
+                duration: '3-6 Months',
+                goal: 'Validate the core user loop of "identify, augment, capture."',
+                features: ['On-device recognition (limited set)', 'Basic static color-grading filters', 'Photo capture with overlays'],
+                tech: 'Unity + AR Foundation, MobileNetV2 model, basic Firebase backend.'
+            },
+            {
+                phase: 'Phase 2',
+                title: 'Social Launch',
+                duration: '6-9 Months Post-MVP',
+                goal: 'Build a community and test social engagement mechanics.',
+                features: ['User accounts and profiles', 'Hashtags and "likes" for geo-tagged locations', 'Map-based view to explore content'],
+                tech: 'MongoDB for social data, PostgreSQL/PostGIS for geo-queries, GraphQL API.'
+            },
+            {
+                phase: 'Phase 3',
+                title: 'Monetization & Expansion',
+                duration: '9-12 Months Post-Social',
+                goal: 'Establish initial revenue streams and expand content.',
+                features: ['In-app purchases for premium filters', 'Pilot programs with brand partners', 'Dramatically expanded recognition database'],
+                tech: 'Payment gateway integration, Brand partner portal, Scaled ML pipeline.'
+            },
+            {
+                phase: 'Phase 4',
+                title: 'The AR Cloud',
+                duration: 'Ongoing',
+                goal: 'Solidify NaturaLens as the definitive social layer on the natural world.',
+                features: ['Shared AR experiences (collaborative exploration)', 'Persistent AR content users can leave for others', 'AI-driven personalization and recommendations'],
+                tech: 'Deep integration of Niantic Lightship VPS, Scaled AWS infrastructure, R&D in advanced AI/ML.'
+            }
+        ]
+    };
+
+    let techChart;
+
+    function initTechStackChart() {
+        const featureSelector = document.getElementById('feature-selector');
+        const features = Object.keys(appData.techStack.features);
+        features.forEach(feature => {
+            const option = document.createElement('option');
+            option.value = feature;
+            option.textContent = feature;
+            featureSelector.appendChild(option);
+        });
+
+        const ctx = document.getElementById('tech-stack-chart').getContext('2d');
+        techChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: appData.techStack.platforms,
+                datasets: [{
+                    label: features[0],
+                    data: appData.techStack.features[features[0]],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.5)',
+                        'rgba(54, 162, 235, 0.5)',
+                        'rgba(255, 206, 86, 0.5)',
+                        'rgba(75, 192, 192, 0.5)',
+                        'rgba(153, 102, 255, 0.5)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 5,
+                        ticks: {
+                            callback: function(value, index, values) {
+                                return appData.techStack.featureLabels[value-1] || '';
+                            },
+                             stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    title: {
+                        display: true,
+                        text: features[0] + ' Capability'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.x !== null) {
+                                    label += appData.techStack.featureLabels[context.parsed.x - 1];
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        featureSelector.addEventListener('change', (e) => {
+            const selectedFeature = e.target.value;
+            techChart.data.datasets[0].data = appData.techStack.features[selectedFeature];
+            techChart.data.datasets[0].label = selectedFeature;
+            techChart.options.plugins.title.text = selectedFeature + ' Capability';
+            techChart.update();
+        });
+    }
+
+    function populateMonetization() {
+        const container = document.getElementById('monetization-cards');
+        const colors = ['bg-blue-100', 'bg-emerald-100', 'bg-amber-100', 'bg-violet-100'];
+        const textColors = ['text-blue-800', 'text-emerald-800', 'text-amber-800', 'text-violet-800'];
+        
+        appData.monetization.forEach((item, index) => {
+            const card = document.createElement('div');
+            card.className = `p-6 rounded-xl shadow-md ${colors[index % colors.length]}`;
+            card.innerHTML = `
+                <h3 class="text-xl font-semibold ${textColors[index % textColors.length]}">${item.title}</h3>
+                <p class="text-xs font-medium uppercase tracking-wider text-slate-500 mb-3">${item.phase}</p>
+                <p class="text-slate-600 mb-3">${item.description}</p>
+                <p class="text-sm"><strong class="text-slate-700">Pro:</strong> ${item.pros}</p>
+                <p class="text-sm"><strong class="text-slate-700">Con:</strong> ${item.cons}</p>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function initRoadmap() {
+        const navContainer = document.getElementById('timeline-nav');
+        const detailsContainer = document.getElementById('roadmap-details');
+
+        appData.roadmap.forEach((item, index) => {
+            const navItem = document.createElement('div');
+            navItem.className = 'timeline-item relative mb-6 cursor-pointer';
+            navItem.dataset.index = index;
+            navItem.innerHTML = `
+                <h4 class="font-semibold text-lg text-slate-700">${item.title}</h4>
+                <p class="text-sm text-slate-500">${item.duration}</p>
+            `;
+            navContainer.appendChild(navItem);
+        });
+
+        const timelineItems = navContainer.querySelectorAll('.timeline-item');
+        
+        function updateRoadmapDetails(index) {
+            const item = appData.roadmap[index];
+            timelineItems.forEach((el, i) => {
+                el.classList.toggle('active', i == index);
+                if(i == index) {
+                   el.querySelector('h4').classList.add('text-blue-600');
+                } else {
+                   el.querySelector('h4').classList.remove('text-blue-600');
+                }
+            });
+
+            detailsContainer.innerHTML = `
+                <p class="text-sm font-semibold uppercase tracking-wider text-blue-600 mb-2">${item.phase} &bull; ${item.duration}</p>
+                <h3 class="text-2xl font-bold mb-4">${item.title}</h3>
+                <p class="text-slate-600 mb-4"><strong>Goal:</strong> ${item.goal}</p>
+                <div class="mb-4">
+                    <h5 class="font-semibold mb-2">Key Features:</h5>
+                    <ul class="list-disc list-inside text-slate-600 space-y-1">
+                        ${item.features.map(f => `<li>${f}</li>`).join('')}
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="font-semibold mb-2">Technology Focus:</h5>
+                    <p class="text-slate-600">${item.tech}</p>
+                </div>
+            `;
+        }
+
+        timelineItems.forEach(item => {
+            item.addEventListener('click', () => {
+                updateRoadmapDetails(item.dataset.index);
+            });
+        });
+
+        updateRoadmapDetails(0); 
+    }
+    
+    function initNavObserver() {
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    navLinks.forEach(link => {
+                        link.classList.toggle('active', link.getAttribute('href').substring(1) === entry.target.id);
+                    });
+                }
+            });
+        }, { rootMargin: "-50% 0px -50% 0px" });
+
+        sections.forEach(section => {
+            observer.observe(section);
+        });
+    }
+
+    initTechStackChart();
+    populateMonetization();
+    initRoadmap();
+    initNavObserver();
+});
+</script>
+
+</body>
+</html>
