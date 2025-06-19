@@ -324,9 +324,419 @@ Great! Here’s how to proceed after implementing photo capture and UI polish in
 
 ---
 
-**Let me know which next step you want deep, step-by-step code guidance for:**
-- Gallery implementation
-- Social/auth features
-- Hashtag/annotation system
-- Map-based feed
+Here’s a step-by-step guide to add a basic map-based feed to your Unity AR app. This feature will let users view the locations where photos were taken, with pins or markers on a map.
+
+---
+
+**1. Choose a Map Solution for Unity**
+
+- Recommended: [Mapbox Unity SDK](https://docs.mapbox.com/unity/maps/overview/) (free for limited use, good documentation, supports mobile).
+- Alternatives: [Online Maps](https://assetstore.unity.com/packages/tools/integration/online-maps-14347), [Google Maps SDK for Unity (third-party wrappers only)].
+
+---
+
+**2. Set Up Mapbox in Unity**
+
+a. Register at [Mapbox](https://account.mapbox.com/) and get an API access token.
+
+b. In Unity:
+- Open Package Manager and import Mapbox Unity SDK, or download and import the Unity package from Mapbox’s website.
+- Drag the Mapbox prefab “AbstractMap” into your scene.
+
+c. Configure AbstractMap:
+- Set map type (satellite, streets).
+- Enter your Mapbox API token in the Mapbox configuration.
+
+---
+
+**3. Store Photo Location Data**
+
+- When capturing a photo, use Unity’s location service to store GPS coordinates alongside the photo’s filename.
+
+```csharp
+[System.Serializable]
+public class PhotoData
+{
+    public string filename;
+    public double latitude;
+    public double longitude;
+}
+```
+
+- Save a list of PhotoData (as JSON or PlayerPrefs). Example when capturing:
+
+```csharp
+IEnumerator CaptureWithLocation()
+{
+    if (!Input.location.isEnabledByUser)
+        yield break;
+    Input.location.Start();
+    yield return new WaitForSeconds(1);
+    double lat = Input.location.lastData.latitude;
+    double lon = Input.location.lastData.longitude;
+    // Save lat/lon with photo filename
+}
+```
+
+---
+
+**4. Place Pins/Markers for Photos**
+
+- On the map, iterate through saved PhotoData.
+- For each, use Mapbox’s `SpawnOnMap` example or equivalent to instantiate a marker prefab at the GPS coordinates.
+
+Example:
+
+```csharp
+public GameObject markerPrefab;
+public AbstractMap map; // Reference to Mapbox AbstractMap
+
+void PlacePhotoMarker(PhotoData data)
+{
+    Vector2d location = new Vector2d(data.latitude, data.longitude);
+    var marker = Instantiate(markerPrefab);
+    marker.transform.localPosition = map.GeoToWorldPosition(location, true);
+    // Optionally, attach a click event to open the photo
+}
+```
+
+---
+
+**5. UI for Map-Based Feed**
+
+- Add a button to switch between AR/camera view and map feed.
+- Clicking a marker shows a popup with the photo and info (load texture from path).
+
+---
+
+**6. Bridge to Advanced Features**
+
+- Add clustering for overlapping markers.
+- Let users search or filter by hashtags, time, etc.
+- Sync photo/location data to backend for social/multi-user feed.
+
+---
+
+**References:**
+- [Mapbox Unity Maps SDK Docs](https://docs.mapbox.com/unity/maps/overview/)
+- [Unity Location Service](https://docs.unity3d.com/ScriptReference/LocationService.html)
+- [Spawn Pins Example (Mapbox)](https://docs.mapbox.com/unity/maps/examples/spawn-on-map/)
+
+Would you like code samples for a specific step, like saving/loading photo locations or handling marker clicks?
+
+Here’s a detailed, actionable step-by-step for both saving photo location data and placing map pins (markers) in your Unity AR app, enabling a map-based feed:
+
+---
+
+**1. Save Photo Location Data When Capturing**
+
+a. **Enable Location Services**
+
+```csharp
+IEnumerator StartLocationService()
+{
+    if (!Input.location.isEnabledByUser)
+    {
+        Debug.Log("Location services not enabled.");
+        yield break;
+    }
+    Input.location.Start();
+    int maxWait = 20;
+    while (Input.location.status == LocationServiceStatus.Initializing && maxWait > 0)
+    {
+        yield return new WaitForSeconds(1);
+        maxWait--;
+    }
+    if (Input.location.status != LocationServiceStatus.Running)
+    {
+        Debug.Log("Unable to start location services.");
+        yield break;
+    }
+    // Location services are ready
+}
+```
+
+b. **Capture and Save Location with Photo**
+
+```csharp
+[System.Serializable]
+public class PhotoData
+{
+    public string filename;
+    public double latitude;
+    public double longitude;
+}
+
+public List<PhotoData> allPhotos = new List<PhotoData>();
+
+void CaptureAndSavePhoto()
+{
+    StartCoroutine(CaptureWithLocation());
+}
+
+IEnumerator CaptureWithLocation()
+{
+    yield return StartLocationService();
+
+    string filename = $"NLens_{System.DateTime.Now:yyyyMMdd_HHmmss}.png";
+    string path = System.IO.Path.Combine(Application.persistentDataPath, filename);
+    ScreenCapture.CaptureScreenshot(filename);
+
+    double lat = Input.location.lastData.latitude;
+    double lon = Input.location.lastData.longitude;
+
+    PhotoData pd = new PhotoData { filename = filename, latitude = lat, longitude = lon };
+    allPhotos.Add(pd);
+
+    // Persist the list using JSON
+    string json = JsonUtility.ToJson(new Serialization<PhotoData>(allPhotos));
+    PlayerPrefs.SetString("PhotoDataList", json);
+    PlayerPrefs.Save();
+}
+
+// Helper for serializing lists
+[System.Serializable]
+public class Serialization<T>
+{
+    public List<T> target;
+    public Serialization(List<T> target) { this.target = target; }
+}
+```
+
+c. **Load Photo Data on App Start**
+
+```csharp
+void LoadPhotoData()
+{
+    if (PlayerPrefs.HasKey("PhotoDataList"))
+    {
+        string json = PlayerPrefs.GetString("PhotoDataList");
+        allPhotos = JsonUtility.FromJson<Serialization<PhotoData>>(json).target;
+    }
+}
+```
+
+---
+
+**2. Place Pins/Markers on the Map (Mapbox Unity SDK Example)**
+
+a. **Setup Mapbox**
+- Add the AbstractMap prefab to your scene.
+- Assign your Mapbox token.
+
+b. **Create a Marker Prefab**
+- Make a simple prefab (e.g., a small sphere or icon) to represent a photo location.
+
+c. **Place Markers for Each Photo**
+
+```csharp
+using Mapbox.Utils;
+using Mapbox.Unity.Map;
+
+public GameObject markerPrefab;
+public AbstractMap map; // Assign in Inspector
+
+void PlaceAllPhotoMarkers()
+{
+    foreach (var pd in allPhotos)
+    {
+        PlacePhotoMarker(pd);
+    }
+}
+
+void PlacePhotoMarker(PhotoData data)
+{
+    Vector2d location = new Vector2d(data.latitude, data.longitude);
+    var marker = Instantiate(markerPrefab, map.GeoToWorldPosition(location, true), Quaternion.identity, map.transform);
+
+    // Optionally, attach the filename or photo to the marker for display on click
+    marker.GetComponent<YourMarkerScript>().photoData = data;
+}
+```
+
+d. **Handle Marker Clicks to Show Photo**
+
+```csharp
+public class YourMarkerScript : MonoBehaviour
+{
+    public PhotoData photoData;
+
+    void OnMouseDown()
+    {
+        // Load and display the photo (e.g., show in a UI popup)
+        string path = System.IO.Path.Combine(Application.persistentDataPath, photoData.filename);
+        byte[] imgData = System.IO.File.ReadAllBytes(path);
+        Texture2D tex = new Texture2D(2, 2);
+        tex.LoadImage(imgData);
+        // Assign tex to a RawImage UI element
+    }
+}
+```
+
+---
+
+**Bridge to Advanced Social Features**
+- You can now display a map-based feed of where photos were taken!
+- Next, add features such as hashtag filtering, syncing to a backend, or displaying trending locations.
+
+- Here’s a comprehensive step-by-step guide covering all three parts for your Unity AR app’s map-based feed:
+
+---
+
+### 1. Saving Photo Location Data
+
+**a. Enable Location Services**
+```csharp
+IEnumerator StartLocationService()
+{
+    if (!Input.location.isEnabledByUser)
+        yield break;
+    Input.location.Start();
+    int maxWait = 20;
+    while (Input.location.status == LocationServiceStatus.Initializing && maxWait > 0)
+    {
+        yield return new WaitForSeconds(1);
+        maxWait--;
+    }
+    if (Input.location.status != LocationServiceStatus.Running)
+        yield break;
+}
+```
+
+**b. Capture Photo and Store GPS**
+```csharp
+[System.Serializable]
+public class PhotoData
+{
+    public string filename;
+    public double latitude;
+    public double longitude;
+}
+
+public List<PhotoData> allPhotos = new List<PhotoData>();
+
+void CaptureAndSavePhoto()
+{
+    StartCoroutine(CaptureWithLocation());
+}
+
+IEnumerator CaptureWithLocation()
+{
+    yield return StartLocationService();
+
+    string filename = $"NLens_{System.DateTime.Now:yyyyMMdd_HHmmss}.png";
+    ScreenCapture.CaptureScreenshot(filename);
+
+    double lat = Input.location.lastData.latitude;
+    double lon = Input.location.lastData.longitude;
+
+    PhotoData pd = new PhotoData { filename = filename, latitude = lat, longitude = lon };
+    allPhotos.Add(pd);
+
+    // Persist list as JSON
+    string json = JsonUtility.ToJson(new Serialization<PhotoData>(allPhotos));
+    PlayerPrefs.SetString("PhotoDataList", json);
+    PlayerPrefs.Save();
+}
+
+[System.Serializable]
+public class Serialization<T>
+{
+    public List<T> target;
+    public Serialization(List<T> target) { this.target = target; }
+}
+```
+
+**c. Load Photo Data**
+```csharp
+void LoadPhotoData()
+{
+    if (PlayerPrefs.HasKey("PhotoDataList"))
+        allPhotos = JsonUtility.FromJson<Serialization<PhotoData>>(PlayerPrefs.GetString("PhotoDataList")).target;
+}
+```
+
+---
+
+### 2. Placing Pins/Markers on Map (Mapbox)
+
+**a. Setup**
+- Add AbstractMap prefab and assign your Mapbox token.
+- Create a marker prefab (e.g., a sphere or image).
+
+**b. Place Markers**
+```csharp
+using Mapbox.Utils;
+using Mapbox.Unity.Map;
+
+public GameObject markerPrefab;
+public AbstractMap map; // Assign in Inspector
+
+void PlaceAllPhotoMarkers()
+{
+    foreach (var pd in allPhotos)
+        PlacePhotoMarker(pd);
+}
+
+void PlacePhotoMarker(PhotoData data)
+{
+    Vector2d location = new Vector2d(data.latitude, data.longitude);
+    var marker = Instantiate(markerPrefab, map.GeoToWorldPosition(location, true), Quaternion.identity, map.transform);
+
+    // Attach data for click handling
+    marker.GetComponent<YourMarkerScript>().photoData = data;
+}
+```
+
+---
+
+### 3. Handling Marker Clicks to Show Photo
+
+**a. Marker Script**
+```csharp
+public class YourMarkerScript : MonoBehaviour
+{
+    public PhotoData photoData;
+
+    void OnMouseDown()
+    {
+        string path = System.IO.Path.Combine(Application.persistentDataPath, photoData.filename);
+        byte[] imgData = System.IO.File.ReadAllBytes(path);
+        Texture2D tex = new Texture2D(2, 2);
+        tex.LoadImage(imgData);
+        // Display tex in a RawImage UI element, e.g., assign to a popup panel
+        FindObjectOfType<FeedUIManager>().ShowPhoto(tex, photoData);
+    }
+}
+```
+
+**b. UI Photo Popup Example**
+```csharp
+public class FeedUIManager : MonoBehaviour
+{
+    public GameObject popupPanel;
+    public UnityEngine.UI.RawImage photoDisplay;
+    public UnityEngine.UI.Text locationText;
+
+    public void ShowPhoto(Texture2D tex, PhotoData pd)
+    {
+        popupPanel.SetActive(true);
+        photoDisplay.texture = tex;
+        locationText.text = $"Lat: {pd.latitude:F5}, Lon: {pd.longitude:F5}";
+    }
+
+    public void HidePhoto()
+    {
+        popupPanel.SetActive(false);
+    }
+}
+```
+---
+
+**Result:**  
+- Each photo is saved with its GPS location.
+- Markers appear on the map at capture locations.
+- Tapping/clicking a marker shows the associated photo and location info.
+
+Let me know if you want to extend this with hashtag filtering, photo sharing, or backend sync!
 
