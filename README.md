@@ -6,7 +6,7 @@ Prompt Scientist: Jon-Arve Constantine Grønsberg-Ovesen
 
 **Purpose of the Repository**
 
-## The NaturaLens repository is centered on the development of a social augmented reality (AR) application aimed at enhancing nature exploration through interactive and educational experiences. The core vision is to merge nature identification with social engagement, creating a "Geosocial Nature Network." Utilizing AR technology, users can identify natural objects, augment their camera views with artistic filters, and annotate and share these experiences socially. The README outlines a strategic roadmap for feature development, target audience positioning, and phased rollout plans, ensuring the application evolves with social integration, enriched content, and monetization strategies.
+## The NaturaLens repository is centered on the development of a social augmented reality (AR) application aimed at enhancing nature exploration through interactive and educational experiences. The core vision is to merge nature identification with social engagement, creating a "Geosocial Nature Network." Utilizing AR technology, users can identify natural objects, augment their camera views with artistic filters, and annotate and share these experiences socially. This README outlines a strategic roadmap for feature development, target audience positioning, and phased rollout plans, ensuring the application evolves with social integration, enriched content, and monetization strategies.
 
 **Features and Technologies**
 
